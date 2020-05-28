@@ -52,11 +52,15 @@ let endMatter = [];
 const md = new MarkdownIt();
 let example = false;
 let pieces;
+let apiName = '';
 
+newLines.push('{{draft}}{{securecontext_header}}{{APIRef("")}}');
 for (let l of markdownLines) {
   if (l.startsWith("**`")) {
     let name = l.slice(0, -3).slice(3);
-    l = `<p><strong><code>{{domxref("${name}")}}</p></strong></code>`;
+    l = `<p>{{domxref("${name}")}}</p>`;
+  } else if (l.startsWith('## Con')) {
+    l = `<h2>Constructor</h2>\n<p>{{domxref("${apiName}.${apiName}()")}}`
   } else if (l.startsWith('```') && (example===false)) {
     example = true;
     l = '<pre class="brush: js">';
@@ -67,10 +71,19 @@ for (let l of markdownLines) {
     // Do nothing.
   } else if (l.startsWith('---')) {
     // Do nothing.
+  } else if (l.startsWith('title:')) {
+    pieces = l.split(":")
+    if (pieces[1]) {
+      apiName = pieces[1].trim();
+      if (apiName.startsWith("'")) { apiName = apiName.slice(1, -1); }
+      if (apiName.startsWith('[[')) { apiName = apiName.slice(2, -2); }
+      apiName = apiName.trim();
+    }
   } else if (l.startsWith('specifications:')) {
     pieces = l.split("#");
     if (pieces[1]) {
       let spec = SPEC_TABLE.replace('[[Link]]', pieces[1].trim());
+      spec = spec.replace('[[Member]]', apiName);
       endMatter.push(spec);
     } else {
       endMatter.push(SPEC_TABLE);
@@ -78,7 +91,7 @@ for (let l of markdownLines) {
   } else if (l.startsWith('browser_compatibility:')) {
     pieces = l.split(":");
     if (pieces[1]) {
-      let compat = COMPAT_TABLE.replace('[[Key]]', pieces[1].trim());
+      let compat = COMPAT_TABLE.replace('[[Key]]', `api.${apiName}`);
       endMatter.push(compat);
     } else {
       endMatter.push(COMPAT_TABLE);
